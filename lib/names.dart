@@ -1,4 +1,28 @@
+const monthNamesEnglish = {
+  0: ayyamIHa,
+  1: "Splendour",
+  2: "Glory",
+  3: "Beauty",
+  4: "Grandeur",
+  5: "Light",
+  6: "Mercy",
+  7: "Words",
+  8: "Perfection",
+  9: "Names",
+  10: "Might",
+  11: "Will",
+  12: "Knowledge",
+  13: "Power",
+  14: "Speech",
+  15: "Questions",
+  16: "Honour",
+  17: "Sovereignty",
+  18: "Dominion",
+  19: "Loftiness"
+};
+
 const monthNames = {
+  0: ayyamIHa,
   1: "Bahá",
   2: "Jalál",
   3: "Jamál",

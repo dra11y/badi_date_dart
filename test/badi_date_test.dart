@@ -1,4 +1,5 @@
 import 'package:badi_date/badi_date.dart';
+import 'package:badi_date/badi_date_interval.dart';
 import 'package:badi_date/bahai_holyday.dart';
 import 'package:test/test.dart';
 
@@ -51,9 +52,8 @@ void main() {
     });
 
     test('next feast, next holy day, day of the year', () {
-      expect(badiDate.nextHolyDate.hashCode, equals(178001));
-      expect(BadiDate(year: 178, month: 1, day: 1).hashCode, equals(178001));
-
+      expect(badiDate.nextHolyDate.hashCode,
+          equals(BadiDate(year: 178, month: 1, day: 1).hashCode));
       expect(
           badiDate.nextHolyDate, equals(BadiDate(year: 178, month: 1, day: 1)));
       expect(badiDate.getNextFeast(),
@@ -295,34 +295,22 @@ void main() {
   });
 
   group('sunset calculation', () {
-    test("handles pols and nonsense values", () {
+    test("handles poles and nonsense values", () {
       final expected = DateTime(2021, 1, 17, 18);
       expect(BadiDate(day: 1, month: 17, year: 177).startDateTime,
           equals(expected));
+      expect(() => BadiDate(day: 1, month: 17, year: 177, latitude: 53.6),
+          throwsArgumentError);
+      expect(() => BadiDate(day: 1, month: 17, year: 177, longitude: 10.0),
+          throwsArgumentError);
       expect(
-          BadiDate(day: 1, month: 17, year: 177, latitude: 53.6).startDateTime,
-          equals(expected));
+          () => BadiDate(
+              day: 1, month: 17, year: 177, longitude: 190.0, latitude: 53.6),
+          throwsArgumentError);
       expect(
-          BadiDate(day: 1, month: 17, year: 177, longitude: 10.0).startDateTime,
-          equals(expected));
-      expect(
-          BadiDate(
-                  day: 1,
-                  month: 17,
-                  year: 177,
-                  longitude: 190.0,
-                  latitude: 53.6)
-              .startDateTime,
-          equals(expected));
-      expect(
-          BadiDate(
-                  day: 1,
-                  month: 17,
-                  year: 177,
-                  longitude: -190.0,
-                  latitude: 53.6)
-              .startDateTime,
-          equals(expected));
+          () => BadiDate(
+              day: 1, month: 17, year: 177, longitude: -190.0, latitude: 53.6),
+          throwsArgumentError);
       expect(
           BadiDate(
                   day: 1, month: 17, year: 177, longitude: 10.0, latitude: 66.6)
@@ -339,7 +327,6 @@ void main() {
           equals(expected));
     });
 
-    // This test only works if your local time is CET or CEST
     test("calculates sunset", () {
       final expected = DateTime.utc(2021, 1, 17, 15, 34);
       expect(
@@ -350,7 +337,6 @@ void main() {
           equals(expected));
     });
 
-    // This test only works if your local time is CET or CEST
     test("handles daylight saving", () {
       final expected = DateTime.utc(2021, 6, 23, 19, 55);
       expect(
@@ -389,6 +375,129 @@ void main() {
           date.endDateTime.toUtc(), equals(DateTime.utc(2022, 10, 26, 6, 3)));
       expect(
           date.startDateTime.toUtc(), equals(DateTime.utc(2022, 10, 25, 6, 3)));
+    });
+  });
+
+  group('comparisons', () {
+    test('basic', () {
+      final date1 = BadiDate(day: 1, month: 1, year: 181);
+      final date2 = BadiDate(day: 2, month: 1, year: 181);
+      expect(date2 == date1, false);
+      expect(date2 == BadiDate(day: 2, month: 1, year: 181), true);
+      expect(date2.hashCode == BadiDate(day: 2, month: 1, year: 181).hashCode,
+          true);
+      expect(date2 > date1, true);
+      expect(date2 >= date1, true);
+      expect(date1 < date2, true);
+      expect(date1 <= date2, true);
+      expect(date1 >= date1.copyWith(), true);
+      expect(date1 > date1.copyWith(), false);
+      expect(date1 <= date1.copyWith(), true);
+      expect(date1 < date1.copyWith(), false);
+    });
+
+    test('localized', () {
+      final utcDate = DateTime.now().toUtc();
+      final euDate = utcDate.add(const Duration(hours: 2)).toLocal();
+      final usDate = utcDate.add(const Duration(hours: -6)).toLocal();
+      final dateEU = BadiDate.fromDate(euDate, longitude: 10.0, latitude: 53.6);
+      final dateUS =
+          BadiDate.fromDate(usDate, longitude: -105.0, latitude: 39.6);
+      expect(dateEU, dateUS);
+      expect(dateEU > dateUS, true);
+    });
+  });
+
+  group('intervals', () {
+    test('adding days', () {
+      expect(
+        BadiDate(day: 1, month: 1, year: 181) + 3,
+        BadiDate(day: 4, month: 1, year: 181),
+      );
+      expect(
+        BadiDate(day: 1, month: 1, year: 181) - 3,
+        BadiDate(day: 17, month: 19, year: 180),
+      );
+      expect(
+        BadiDate(day: 19, month: 1, year: 181).subtract(
+            BadiDateInterval(months: 2),
+            includeAyyamIHaInMonths: false),
+        BadiDate(day: 19, month: 18, year: 180),
+      );
+      expect(
+        BadiDate(day: 19, month: 1, year: 181).subtract(
+            BadiDateInterval(months: 3),
+            includeAyyamIHaInMonths: true),
+        BadiDate(day: 19, month: 18, year: 180),
+      );
+      expect(
+        BadiDate(day: 19, month: 1, year: 181)
+            .addMonths(-2, includeAyyamIHa: true),
+        BadiDate(day: 4, month: 0, year: 180),
+      );
+      expect(
+        BadiDate(day: 19, month: 1, year: 181).subtract(
+            BadiDateInterval(months: 2, days: 1),
+            includeAyyamIHaInMonths: true),
+        BadiDate(day: 3, month: 0, year: 180),
+      );
+      expect(
+        BadiDate(day: 3, month: 0, year: 180).add(
+            BadiDateInterval(months: 2, days: 1),
+            includeAyyamIHaInMonths: true),
+        BadiDate(day: 4, month: 1, year: 181),
+      );
+      expect(
+        BadiDate(day: 19, month: 1, year: 181)
+            .subtract(BadiDateInterval(months: 2, days: 1)),
+        BadiDate(day: 18, month: 18, year: 180),
+      );
+      expect(
+        BadiDate(day: 18, month: 18, year: 180)
+            .add(BadiDateInterval(months: 2, days: 1)),
+        BadiDate(day: 19, month: 1, year: 181),
+      );
+      expect(
+        BadiDate(day: 4, month: 0, year: 180).add(BadiDateInterval.zero),
+        BadiDate(day: 4, month: 0, year: 180),
+      );
+      expect(
+        BadiDate(day: 4, month: 0, year: 180).add(BadiDateInterval(months: 1)),
+        BadiDate(day: 4, month: 19, year: 180),
+      );
+      expect(
+        BadiDate(day: 4, month: 0, year: 180).add(BadiDateInterval(months: -1)),
+        BadiDate(day: 4, month: 18, year: 180),
+      );
+
+      // Ayyám-i-Há 178 B.E. had 5 days
+      expect(
+        BadiDate(day: 5, month: 0, year: 178).add(BadiDateInterval(years: 1)),
+        BadiDate(day: 1, month: 19, year: 179),
+      );
+      expect(
+        BadiDate(day: 5, month: 0, year: 178)
+            .subtract(BadiDateInterval(years: 1)),
+        BadiDate(day: 1, month: 19, year: 177),
+      );
+      expect(
+        BadiDate(day: 5, month: 0, year: 178).add(BadiDateInterval(months: 19)),
+        BadiDate(day: 5, month: 18, year: 179),
+      );
+      expect(
+        BadiDate(day: 5, month: 0, year: 178)
+            .subtract(BadiDateInterval(months: 19)),
+        BadiDate(day: 5, month: 19, year: 177),
+      );
+      expect(
+        BadiDate(day: 1, month: 19, year: 178)
+            .subtract(BadiDateInterval(days: 1)),
+        BadiDate(day: 5, month: 0, year: 178),
+      );
+      expect(
+        BadiDate(day: 19, month: 18, year: 178).add(BadiDateInterval(days: 5)),
+        BadiDate(day: 5, month: 0, year: 178),
+      );
     });
   });
 }
